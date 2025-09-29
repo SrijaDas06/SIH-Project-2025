@@ -1,0 +1,503 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Kishan Mitra — Crop Advisor</title>
+  <style>
+    :root{
+      --bg:#f7fff0;
+      --card:#ffffff;
+      --accent1:#2e8b57; /* crop green */
+      --accent2:#f6c85f; /* crop yellow */
+      --accent3:#8fbfe0; /* sky */
+      --muted:#6b6b6b;
+      --glass: rgba(255,255,255,0.8);
+      --glass-2: rgba(255,255,255,0.6);
+      font-family: Inter, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial;
+    }
+    *{box-sizing:border-box}
+    body{margin:0;background:linear-gradient(135deg,var(--bg),#e8fff4);color:#123;}
+    .app{max-width:1100px;margin:28px auto;padding:24px}
+    header{display:flex;align-items:center;gap:16px}
+    .logo{display:flex;align-items:center;gap:12px}
+    .logo .mark{width:56px;height:56px;border-radius:12px;background:linear-gradient(135deg,var(--accent1),var(--accent2));display:flex;align-items:center;justify-content:center;color:white;font-weight:700;font-size:20px;box-shadow:0 6px 18px rgba(46,139,87,0.2)}
+    h1{margin:0;font-size:20px}
+    p.lead{margin:0;color:var(--muted);font-size:13px}
+
+    .grid{display:grid;grid-template-columns:380px 1fr;gap:20px;margin-top:20px}
+
+    .card{background:var(--card);border-radius:12px;padding:18px;box-shadow:0 6px 20px rgba(18,35,25,0.06)}
+    .controls label{font-size:13px;color:var(--muted);display:block;margin-bottom:6px}
+    .controls select,.controls input{width:100%;padding:10px;border-radius:8px;border:1px solid #e6e6e6;font-size:14px}
+    .row{display:flex;gap:12px}
+    .half{flex:1}
+    .btn{display:inline-flex;align-items:center;gap:8px;padding:10px 14px;border-radius:10px;border:0;background:linear-gradient(90deg,var(--accent1),var(--accent2));color:white;font-weight:600;cursor:pointer}
+    .btn.secondary{background:transparent;border:1px solid var(--accent1);color:var(--accent1)}
+
+    .results{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-top:14px}
+    .resultCard{padding:12px;border-radius:10px;background:linear-gradient(180deg,var(--glass),var(--glass-2));border:1px solid rgba(0,0,0,0.04)}
+    .resultCard h3{margin:0 0 8px 0}
+    .muted{color:var(--muted);font-size:13px}
+
+    .recommendList{list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:8px}
+    .recommendList li{padding:10px;border-radius:8px;background:#fffef7;border-left:4px solid var(--accent2)}
+
+    footer{margin-top:18px;color:var(--muted);font-size:13px}
+
+    @media (max-width:900px){.grid{grid-template-columns:1fr;}.results{grid-template-columns:1fr}}
+
+    .chip{display:inline-block;padding:6px 8px;border-radius:999px;background:linear-gradient(90deg,var(--accent3),var(--accent1));color:white;font-weight:600;font-size:12px}
+
+    .kpi{display:flex;gap:12px;align-items:center}
+    .kpi .item{flex:1;padding:12px;border-radius:10px;background:linear-gradient(180deg,#ffffff,#f7fff0);}
+    .kpi .value{font-weight:700;font-size:18px}
+
+    /* floating mic button */
+    .mic-btn{position:fixed;bottom:20px;left:20px;z-index:999;width:64px;height:64px;border-radius:50%;
+      background:linear-gradient(135deg,var(--accent1),var(--accent2));display:flex;align-items:center;justify-content:center;
+      color:white;font-size:28px;cursor:pointer;box-shadow:0 6px 16px rgba(0,0,0,0.2);}
+    .mic-btn.active{animation:pulse 1.6s infinite}
+    @keyframes pulse{0%{transform:scale(1)}50%{transform:scale(1.08)}100%{transform:scale(1)}}
+
+    .voice-status{position:fixed;bottom:100px;left:20px;background:rgba(255,255,255,0.95);padding:8px 12px;border-radius:10px;box-shadow:0 6px 18px rgba(0,0,0,0.08);font-size:14px;color:#234;}
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header>
+      <div class="logo">
+        <div class="mark">KM</div>
+        <div>
+          <h1>Kishan Mitra</h1>
+          <p class="lead">AI-driven crop recommendations • Multilingual Voice Assistant • Real-time soil sensing</p>
+        </div>
+      </div>
+      <div style="margin-left:auto" class="chip">Prototype</div>
+    </header>
+
+    <div class="grid">
+      <!-- Left Panel -->
+      <div>
+        <div class="card controls">
+          <h2>Crop & Soil Inputs</h2>
+
+          <div>
+            <label>City</label>
+            <input id="cityInput" type="text" value="Delhi" />
+          </div>
+
+          <div style="margin-top:10px">
+            <label>State</label>
+            <select id="stateSelect"><option value="">Loading…</option></select>
+          </div>
+          <div style="margin-top:10px">
+            <label>District</label>
+            <select id="districtSelect"><option value="">Select state first</option></select>
+          </div>
+          <div style="margin-top:10px">
+            <label>Month</label>
+            <select id="monthSelect">
+              <option value="JAN">January</option>
+              <option value="FEB">February</option>
+              <option value="MAR">March</option>
+              <option value="APR">April</option>
+              <option value="MAY">May</option>
+              <option value="JUN">June</option>
+              <option value="JUL">July</option>
+              <option value="AUG">August</option>
+              <option value="SEP">September</option>
+              <option value="OCT">October</option>
+              <option value="NOV">November</option>
+              <option value="DEC">December</option>
+            </select>
+          </div>
+
+          <div class="row" style="margin-top:12px">
+            <div class="half">
+              <label>N (Nitrogen) - kg/ha</label>
+              <input id="nVal" type="number" value="80" />
+            </div>
+            <div class="half">
+              <label>P (Phosphorous) - kg/ha</label>
+              <input id="pVal" type="number" value="30" />
+            </div>
+          </div>
+          <div class="row" style="margin-top:12px">
+            <div class="half">
+              <label>K (Potassium) - kg/ha</label>
+              <input id="kVal" type="number" value="40" />
+            </div>
+            <div class="half">
+              <label>Soil pH</label>
+              <input id="phVal" type="number" step="0.1" value="6.5" />
+            </div>
+          </div>
+
+          <div style="margin-top:14px;display:flex;gap:10px;">
+            <button class="btn" id="analyzeBtn">Analyze & Recommend</button>
+            <button class="btn secondary" id="clearBtn">Reset</button>
+          </div>
+
+          <hr style="margin:14px 0;border:none;border-top:1px dashed #eee">
+
+          <label>Voice Language</label>
+          <select id="langSelect">
+            <option value="hi-IN" selected>हिन्दी (Hindi)</option>
+            <option value="en-IN">English (India)</option>
+            <option value="mr-IN">मराठी (Marathi)</option>
+            <option value="ta-IN">தமிழ் (Tamil)</option>
+            <option value="te-IN">తెలుగు (Telugu)</option>
+            <option value="bn-IN">বাংলা (Bengali)</option>
+            <option value="kn-IN">ಕನ್ನಡ (Kannada)</option>
+          </select>
+          <div class="muted" style="margin-top:10px">
+            Tip: Tap the mic (bottom-left), speak in your local language for inputs or crop queries.
+          </div>
+        </div>
+
+        <div class="card" style="margin-top:12px">
+          <h3>Quick Tips</h3>
+          <ul>
+            <li>Use local language for better recognition.</li>
+            <li>Ensure sensor is placed 10–15 cm deep for accurate readings.</li>
+            <li>Adjust NPK values based on crop lifecycle stage.</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- Right Panel -->
+      <div>
+        <div class="card">
+          <div style="display:flex;justify-content:space-between;align-items:center;">
+            <div>
+              <h2>Recommendations</h2>
+              <div class="muted">Best crops, compost & pest control</div>
+            </div>
+            <div style="text-align:right">
+              <div class="muted">Farm Score</div>
+              <div id="farmScore" style="font-size:22px;font-weight:800;color:var(--accent1)">—</div>
+            </div>
+          </div>
+
+          <div class="results" style="margin-top:14px">
+            <div class="resultCard">
+              <h3>Top Crops</h3>
+              <ul id="cropList"></ul>
+            </div>
+            <div class="resultCard">
+              <h3>Soil & Weather Snapshot</h3>
+              <div id="snapshot" class="muted"></div>
+            </div>
+            <div class="resultCard">
+              <h3>Compost Suggestions</h3>
+              <ul id="compostList" class="recommendList"></ul>
+            </div>
+            <div class="resultCard">
+              <h3>Pest & Disease</h3>
+              <ul id="pestList" class="recommendList"></ul>
+            </div>
+          </div>
+        </div>
+
+        <div class="card summaryCard" style="margin-top:16px">
+          <h3>Summary</h3>
+          <div id="oneLine" style="margin-top:10px;font-weight:700;font-size:16px">—</div>
+
+          <div class="kpi" style="margin-top:12px">
+            <div class="item">
+              <div class="muted">Temperature</div>
+              <div class="value" id="tempVal">—</div>
+            </div>
+            <div class="item">
+              <div class="muted">Humidity</div>
+              <div class="value" id="humidityVal">—</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <footer>
+      Built with ❤ for farmers • Kishan Mitra prototype • Voice features depend on browser support
+    </footer>
+  </div>
+
+  <!-- Floating mic button -->
+  <div class="mic-btn" id="micBtn">🎙</div>
+  <div class="voice-status" id="voiceStatus">Idle</div>
+
+  <script>
+    /************ STATE → DISTRICT: stable implementation ************/
+
+    // Minimal but representative mapping of Indian states -> districts (extend as needed)
+    const STATES = {
+      "Andhra Pradesh": ["Anantapur","Chittoor","Guntur","Krishna","Kurnool","Nellore","Prakasam","Srikakulam","Visakhapatnam"],
+      "Arunachal Pradesh": ["Tawang","West Kameng","East Kameng","Papum Pare","Siang","Changlang"],
+      "Assam": ["Kamrup","Jorhat","Dibrugarh","Guwahati","Nagaon","Silchar"],
+      "Bihar": ["Patna","Gaya","Nalanda","Purnea","Muzaffarpur","Bhagalpur"],
+      "Chhattisgarh": ["Raipur","Bastar","Durg","Bilaspur","Korba"],
+      "Goa": ["North Goa","South Goa"],
+      "Gujarat": ["Ahmedabad","Surat","Vadodara","Rajkot","Bhavnagar"],
+      "Haryana": ["Ambala","Gurgaon","Karnal","Panipat","Rohtak"],
+      "Himachal Pradesh": ["Shimla","Solan","Kangra","Mandi"],
+      "Jharkhand": ["Ranchi","Dhanbad","Jamshedpur","Giridih"],
+      "Karnataka": ["Bengaluru Urban","Bengaluru Rural","Mysuru","Mangalore","Hubli"],
+      "Kerala": ["Thiruvananthapuram","Kollam","Kochi","Thrissur","Kozhikode"],
+      "Madhya Pradesh": ["Bhopal","Indore","Gwalior","Jabalpur","Satna"],
+      "Maharashtra": ["Mumbai","Pune","Nagpur","Nashik","Ahmednagar","Solapur"],
+      "Manipur": ["Imphal East","Imphal West","Thoubal","Bishnupur"],
+      "Meghalaya": ["Shillong","East Khasi Hills","West Garo Hills"],
+      "Mizoram": ["Aizawl","Lunglei","Kolasib"],
+      "Nagaland": ["Kohima","Dimapur","Mokokchung"],
+      "Odisha": ["Bhubaneswar","Cuttack","Puri","Sambalpur","Balasore"],
+      "Punjab": ["Amritsar","Ludhiana","Jalandhar","Patiala"],
+      "Rajasthan": ["Jaipur","Jodhpur","Udaipur","Bikaner","Ajmer"],
+      "Sikkim": ["East Sikkim","North Sikkim","West Sikkim","South Sikkim"],
+      "Tamil Nadu": ["Chennai","Coimbatore","Madurai","Tiruchirappalli"],
+      "Telangana": ["Hyderabad","Warangal","Nizamabad","Karimnagar"],
+      "Tripura": ["Agartala","West Tripura","Dhalai"],
+      "Uttar Pradesh": ["Lucknow","Kanpur","Varanasi","Agra","Meerut","Ghaziabad"],
+      "Uttarakhand": ["Dehradun","Haridwar","Nainital","Almora"],
+      "West Bengal": ["Kolkata","Howrah","Darjeeling","Siliguri","Asansol"],
+      "Delhi": ["New Delhi","North Delhi","South Delhi","East Delhi","West Delhi"],
+      "Puducherry": ["Puducherry"],
+      "Andaman & Nicobar": ["Port Blair"],
+      "Lakshadweep": ["Lakshadweep"]
+    };
+
+    const stateSelect = document.getElementById('stateSelect');
+    const districtSelect = document.getElementById('districtSelect');
+    const monthSelect = document.getElementById('monthSelect');
+
+    // Populate state select (sorted keys)
+    function populateStates(){
+      // clear then add a placeholder
+      stateSelect.innerHTML = '';
+      const placeholder = document.createElement('option');
+      placeholder.value = '';
+      placeholder.textContent = '-- Select State --';
+      stateSelect.appendChild(placeholder);
+
+      const keys = Object.keys(STATES).sort((a,b)=> a.localeCompare(b));
+      keys.forEach(st => {
+        const opt = document.createElement('option');
+        opt.value = st;
+        opt.textContent = st;
+        stateSelect.appendChild(opt);
+      });
+
+      // auto-select first real state for convenience (optional)
+      if(keys.length>0){
+        stateSelect.value = keys[0];
+        populateDistricts();
+      }
+    }
+
+    function populateDistricts(){
+      const state = stateSelect.value;
+      districtSelect.innerHTML = '';
+      if(!state || !STATES[state]){
+        const opt = document.createElement('option');
+        opt.value = '';
+        opt.textContent = '-- Select State First --';
+        districtSelect.appendChild(opt);
+        return;
+      }
+      const districts = STATES[state];
+      const placeholder = document.createElement('option');
+      placeholder.value = '';
+      placeholder.textContent = '-- Select District --';
+      districtSelect.appendChild(placeholder);
+
+      districts.forEach(d=>{
+        const opt = document.createElement('option');
+        opt.value = d;
+        opt.textContent = d;
+        districtSelect.appendChild(opt);
+      });
+      // auto-select first district (optional)
+      if(districts.length>0) districtSelect.value = districts[0];
+    }
+
+    // Initialize
+    populateStates();
+    stateSelect.addEventListener('change', populateDistricts);
+
+    // Ensure monthSelect defaults if empty
+    if(!monthSelect.value) monthSelect.value = "JAN";
+
+    /************ Simple Demo Analyze (no backend required) ************/
+    const CROPS = [
+      {id:'maize', name:'Maize'},
+      {id:'rice', name:'Rice'},
+      {id:'wheat', name:'Wheat'},
+      {id:'coffee', name:'Coffee'},
+      {id:'jute', name:'Jute'}
+    ];
+
+    const COMPOSTS = {
+      'Maize': ['Vermicompost', 'Neem-cake enriched compost'],
+      'Rice': ['Green manure (Sesbania)', 'Farmyard manure'],
+      'Wheat': ['N-rich FYM', 'Composted manure'],
+      'Coffee': ['Compost + Mulch', 'Organic matter'],
+      'Jute': ['Organic compost', 'Vermicompost']
+    };
+    const PESTS = {
+      'Maize': ['Pheromone traps', 'Neem oil'],
+      'Rice': ['Trichogramma', 'Biopesticide sprays'],
+      'Wheat': ['Fungicide as per local advisory', 'Resistant varieties'],
+      'Coffee': ['Pruning + targeted insecticide', 'Biocontrol'],
+      'Jute': ['Timely weeding', 'Bio-pesticide']
+    };
+
+    document.getElementById('analyzeBtn').addEventListener('click', () => {
+      // read inputs
+      const state = stateSelect.value || '—';
+      const district = districtSelect.value || '—';
+      const city = document.getElementById('cityInput').value || district || state;
+      const month = monthSelect.value;
+      const N = Number(document.getElementById('nVal').value || 0);
+      const P = Number(document.getElementById('pVal').value || 0);
+      const K = Number(document.getElementById('kVal').value || 0);
+      const ph = Number(document.getElementById('phVal').value || 0);
+
+      // Demo: pick 3 top crops by simple heuristic (randomized for demo)
+      const topCrops = [CROPS[0].name, CROPS[3].name, CROPS[4].name]; // Maize, Coffee, Jute
+      const cropList = document.getElementById('cropList');
+      cropList.innerHTML = '';
+      topCrops.forEach((c,i) => {
+        const li = document.createElement('li');
+        li.innerHTML = `<strong>${i+1}. ${c}</strong>`;
+        cropList.appendChild(li);
+      });
+
+      // Snapshot (mock weather)
+      const temp = 33.05;
+      const humidity = 52;
+      const snapshot = document.getElementById('snapshot');
+      snapshot.innerHTML = `<div><strong>District:</strong> ${district}</div>
+                            <div class="muted">Temp: ${temp}°C • Humidity: ${humidity}%</div>
+                            <div class="muted">Soil: N=${N} P=${P} K=${K} • pH=${ph}</div>`;
+
+      // Compost & pest lists
+      const compostList = document.getElementById('compostList');
+      const pestList = document.getElementById('pestList');
+      compostList.innerHTML = '';
+      pestList.innerHTML = '';
+      topCrops.forEach(c => {
+        const cli = document.createElement('li');
+        cli.textContent = COMPOSTS[c] ? COMPOSTS[c].join(', ') : 'Standard compost';
+        compostList.appendChild(cli);
+
+        const pli = document.createElement('li');
+        pli.textContent = PESTS[c] ? PESTS[c].join(', ') : 'Monitor pests';
+        pestList.appendChild(pli);
+      });
+
+      document.getElementById('oneLine').textContent = `${city}'s ${month} conditions favor ${topCrops[0]}. Apply balanced NPK and adopt IPM (Integrated Pest Management).`;
+      document.getElementById('tempVal').textContent = temp + "°C";
+      document.getElementById('humidityVal').textContent = humidity + "%";
+      document.getElementById('farmScore').textContent = '—'; // placeholder
+    });
+
+    // Reset
+    document.getElementById('clearBtn').addEventListener('click', () => {
+      document.getElementById('cityInput').value = 'Delhi';
+      document.getElementById('nVal').value = 80;
+      document.getElementById('pVal').value = 30;
+      document.getElementById('kVal').value = 40;
+      document.getElementById('phVal').value = 6.5;
+      document.getElementById('cropList').innerHTML = '';
+      document.getElementById('compostList').innerHTML = '';
+      document.getElementById('pestList').innerHTML = '';
+      document.getElementById('snapshot').innerHTML = '';
+      document.getElementById('oneLine').textContent = '—';
+      document.getElementById('tempVal').textContent = '—';
+      document.getElementById('humidityVal').textContent = '—';
+      document.getElementById('farmScore').textContent = '—';
+    });
+
+    /************ Simple Voice Assistant UI (browser-based) ************/
+    const micBtn = document.getElementById('micBtn');
+    const voiceStatus = document.getElementById('voiceStatus');
+    let recognition;
+    let listening = false;
+    const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition || null;
+
+    if(SpeechRec){
+      recognition = new SpeechRec();
+      recognition.continuous = false;
+      recognition.interimResults = false;
+      recognition.lang = document.getElementById('langSelect').value || 'hi-IN';
+
+      recognition.onstart = () => { listening = true; micBtn.classList.add('active'); voiceStatus.textContent = 'Listening...'; };
+      recognition.onend = () => { listening = false; micBtn.classList.remove('active'); voiceStatus.textContent = 'Idle'; };
+      recognition.onerror = (e) => { listening = false; micBtn.classList.remove('active'); voiceStatus.textContent = 'Error: ' + (e.error || e.message); };
+
+      recognition.onresult = (ev) => {
+        const text = ev.results[0][0].transcript;
+        voiceStatus.textContent = 'Heard: ' + text;
+        // simple voice parsing: set N P K PH if numbers present
+        const nums = text.match(/[\d\.]+/g);
+        if(nums && nums.length>=4){
+          document.getElementById('nVal').value = nums[0];
+          document.getElementById('pVal').value = nums[1];
+          document.getElementById('kVal').value = nums[2];
+          document.getElementById('phVal').value = nums[3];
+          voiceStatus.textContent = 'Values set from voice';
+        } else if(/analyz|sujhav|suggest|recommend|कौन सी फसल|कौन फसल|suggest/i.test(text)){
+          voiceStatus.textContent = 'Running analysis...';
+          document.getElementById('analyzeBtn').click();
+        } else {
+          // try to match a state or district
+          const t = text.toLowerCase();
+          let matched = false;
+          for(const st of Object.keys(STATES)){
+            if(t.includes(st.toLowerCase())){
+              stateSelect.value = st;
+              populateDistricts();
+              matched = true;
+              break;
+            }
+          }
+          if(!matched){
+            // try districts
+            for(const st of Object.keys(STATES)){
+              for(const d of STATES[st]){
+                if(t.includes(d.toLowerCase())){
+                  stateSelect.value = st;
+                  populateDistricts();
+                  districtSelect.value = d;
+                  matched = true;
+                  break;
+                }
+              }
+              if(matched) break;
+            }
+          }
+        }
+      };
+    } else {
+      voiceStatus.textContent = 'Speech API not supported in this browser';
+      micBtn.style.opacity = 0.6;
+    }
+
+    micBtn.addEventListener('click', () => {
+      if(!recognition) return alert('Speech recognition is not supported in this browser. Use Chrome or Edge.');
+      if(!listening){
+        try { recognition.lang = document.getElementById('langSelect').value || 'hi-IN'; recognition.start(); }
+        catch(e){ console.warn(e); }
+      } else {
+        recognition.stop();
+      }
+    });
+
+    // update recognition language on select change
+    document.getElementById('langSelect').addEventListener('change', (e) => {
+      if(recognition) recognition.lang = e.target.value;
+    });
+
+  </script>
+</body>
+</html>
